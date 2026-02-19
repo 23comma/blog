@@ -6,9 +6,9 @@
 ---
 
 ## 🛠 Tech Stack
-- **Framework**: Spring Boot 3.x
+- **Framework**: Spring Boot
 - **Build Tool**: Gradle / Maven
-- **Language**: Java 17
+- **Language**: Java 25
 - **Database**: MariaDB
 - **ORM**: Spring Data JPA
 - **View Engine**: Thymeleaf (or Mustache)
