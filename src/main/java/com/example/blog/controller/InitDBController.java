@@ -65,6 +65,42 @@ public class InitDBController {
         return "redirect:/";
     }
     
+    @PostMapping("/sample/many")
+    public String createManySample() {
+        try (Connection conn = dataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
+            
+            stmt.execute("USE blog");
+            
+            String[] authors = {"Admin", "User1", "User2", "User3", "User4"};
+            String[][] tagOptions = {
+                {"Java", "Spring", "Boot"}, {"Python", "Django"}, {"React", "Vue", "Angular"},
+                {"Database", "MySQL", "MariaDB"}, {"AWS", "Docker", "Kubernetes"}
+            };
+            
+            StringBuilder sql = new StringBuilder("INSERT INTO post (title, content, author, view_count, tags, created_at, updated_at) VALUES ");
+            
+            for (int i = 1; i <= 123; i++) {
+                String author = authors[i % authors.length];
+                int views = (int)(Math.random() * 100);
+                StringBuilder tags = new StringBuilder();
+                String[] tagsArr = tagOptions[i % tagOptions.length];
+                for (int j = 0; j < tagsArr.length; j++) {
+                    if (j > 0) tags.append(", ");
+                    tags.append(tagsArr[j]);
+                }
+                sql.append(String.format("('제목 %d', '<p>내용 %d입니다. 이것은 테스트 글입니다.</p>', '%s', %d, '%s', NOW(), NOW())", i, i, author, views, tags.toString()));
+                if (i < 123) sql.append(", ");
+            }
+            
+            stmt.execute(sql.toString());
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "redirect:/";
+    }
+    
     @DeleteMapping("/data")
     public String deleteData() {
         try (Connection conn = dataSource.getConnection();

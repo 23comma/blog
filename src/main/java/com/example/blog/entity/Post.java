@@ -54,4 +54,26 @@ public class Post {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    
+    public String getContentSnippet(int maxLength) {
+        if (content == null || content.isEmpty()) return "";
+        String plainText = content.replaceAll("<[^>]*>", "");
+        if (plainText.length() <= maxLength) return plainText;
+        return plainText.substring(0, maxLength) + "...";
+    }
+    
+    public String getHighlightedContent(String keyword) {
+        if (content == null || keyword == null || keyword.isEmpty()) {
+            return getContentSnippet(200);
+        }
+        String plainText = content.replaceAll("<[^>]*>", "");
+        String regex = "(?i)(" + keyword + ")";
+        String result = plainText.replaceAll(regex, "<mark>$1</mark>");
+        int index = result.toLowerCase().indexOf("<mark>");
+        if (index == -1) return getContentSnippet(200);
+        int start = Math.max(0, index - 50);
+        int end = Math.min(result.length(), index + keyword.length() + 100);
+        String snippet = result.substring(start, end);
+        return (start > 0 ? "..." : "") + snippet + (end < result.length() ? "..." : "");
+    }
 }

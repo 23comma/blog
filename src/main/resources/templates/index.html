@@ -5,14 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blog</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .container { max-width: 1600px; }
+        .table { font-size: 14px; }
+        .table th, .table td { vertical-align: middle; padding: 12px 8px; }
+        .card { box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .pagination { margin-top: 20px; }
+    </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <h1>Blog Posts</h1>
-        
-        <div class="mb-3">
-            <a href="/db" class="btn btn-secondary">DB</a>
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 th:if="${searchTag != null}">Search: <span th:text="${searchTag}"></span></h2>
+            <h2 th:if="${searchKeyword != null and searchTag == null}">Search: <span th:text="${searchKeyword}"></span></h2>
+            <h2 th:unless="${searchTag != null or searchKeyword != null}">Blog Posts</h2>
+            
+            <div>
+                <a href="/" class="btn btn-primary">Home</a>
+                <a href="/write" class="btn btn-success">Write</a>
+                <a href="/db" class="btn btn-secondary">DB</a>
+                <div class="btn-group ms-2" role="group">
+                    <a th:href="@{/(sort='created', order='desc')}" class="btn btn-sm" th:classappend="${sortBy == 'created' and order == 'desc'} ? 'btn-dark' : 'btn-outline-dark'">최신순</a>
+                    <a th:href="@{/(sort='created', order='asc')}" class="btn btn-sm" th:classappend="${sortBy == 'created' and order == 'asc'} ? 'btn-dark' : 'btn-outline-dark'">오래된순</a>
+                    <a th:href="@{/(sort='views', order='desc')}" class="btn btn-sm" th:classappend="${sortBy == 'views' and order == 'desc'} ? 'btn-dark' : 'btn-outline-dark'">인기순</a>
+                </div>
+            </div>
         </div>
+        
+        <form th:action="@{/}" method="get" class="row g-3 mb-4">
+            <div class="col-auto">
+                <input type="text" name="q" class="form-control form-control-lg" placeholder="Search..." th:value="${searchKeyword}" style="width: 400px;">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary btn-lg">Search</button>
+            </div>
+            <div class="col-auto" th:if="${searchTag != null or searchKeyword != null}">
+                <a href="/" class="btn btn-outline-secondary btn-lg">Clear Search</a>
+            </div>
+        </form>
         
         <div th:if="${error}" class="alert alert-warning" role="alert">
             <span th:text="${error}"></span>
@@ -20,49 +51,79 @@
         
         <div th:if="${posts != null and not #lists.isEmpty(posts)}">
             <div class="row">
-                <div class="col-md-9">
-                    <a href="/write" class="btn btn-primary mb-3">Write</a>
-                    <table class="table table-striped">
-                        <thead>
+                <div class="col-lg-10">
+                    <table class="table table-hover table-striped">
+                        <thead class="table-dark">
                             <tr>
-                                <th>ID</th>
-                                <th>Title</th>
-                                <th>Author</th>
-                                <th>Views</th>
-                                <th>Tags</th>
-                                <th>Created</th>
-                                <th>Updated</th>
+                                <th style="width: 60px;">ID</th>
+                                <th style="width: 300px;">Title</th>
+                                <th>Content</th>
+                                <th style="width: 100px;">Author</th>
+                                <th style="width: 80px;">Views</th>
+                                <th style="width: 150px;">Tags</th>
+                                <th style="width: 140px;">Created</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr th:each="post : ${posts}">
                                 <td th:text="${post.id}"></td>
-                                <td><a th:href="@{/post/{id}(id=${post.id})}" th:text="${post.title}"></a></td>
+                                <td><a th:href="@{/post/{id}(id=${post.id})}" th:text="${post.title}" class="text-decoration-none fw-bold"></a></td>
+                                <td>
+                                    <span th:if="${searchKeyword != null}" th:utext="${post.getHighlightedContent(searchKeyword)}" class="text-muted"></span>
+                                </td>
                                 <td th:text="${post.author}"></td>
-                                <td th:text="${post.viewCount}"></td>
-                                <td th:text="${post.tags}"></td>
-                                <td th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></td>
-                                <td th:text="${#temporals.format(post.updatedAt, 'yyyy-MM-dd HH:mm')}"></td>
+                                <td><span class="badge bg-secondary" th:text="${post.viewCount}"></span></td>
+                                <td>
+                                    <span th:if="${searchTag != null}" th:utext="${post.tags.replaceAll(searchTag, '<mark>' + searchTag + '</mark>')}"></span>
+                                    <span th:unless="${searchTag != null}" th:text="${post.tags}"></span>
+                                </td>
+                                <td th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}" class="text-muted"></td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
-                <div class="col-md-3">
+                <div class="col-lg-2">
+                    <div class="card mb-3">
+                        <div class="card-header bg-dark text-white">View Ranking</div>
+                        <ul class="list-group list-group-flush">
+                            <li th:each="post, stat : ${viewRank}" class="list-group-item">
+                                <span class="badge bg-dark me-1" th:text="${stat.count}"></span>
+                                <a th:href="@{/post/{id}(id=${post.id})}" th:text="${#strings.abbreviate(post.title, 20)}" class="text-decoration-none"></a>
+                                <span class="badge bg-secondary" th:text="${post.viewCount}"></span>
+                            </li>
+                        </ul>
+                    </div>
                     <div class="card">
-                        <div class="card-header">Tag Ranking</div>
+                        <div class="card-header bg-dark text-white">Tag Ranking</div>
                         <ul class="list-group list-group-flush">
                             <li th:each="tag, stat : ${tagRank}" class="list-group-item">
-                                <span th:text="${stat.count}"></span>. <span th:text="${tag.key}"></span> (<span th:text="${tag.value}"></span>)
+                                <span class="badge bg-dark me-1" th:text="${stat.count}"></span>
+                                <a th:href="@{/(tag=${tag.key})}" th:text="${tag.key}" class="text-decoration-none"></a>
+                                <span class="badge bg-secondary" th:text="${tag.value}"></span>
                             </li>
                         </ul>
                     </div>
                 </div>
             </div>
+            
+            <nav th:if="${totalPages > 1}" aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                        <a class="page-link" th:href="@{/(page=${currentPage - 1}, sort=${sortBy}, order=${order})}">Previous</a>
+                    </li>
+                    <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}" th:classappend="${i == currentPage} ? 'active'">
+                        <a class="page-link" th:href="@{/(page=${i}, sort=${sortBy}, order=${order})}" th:text="${i + 1}"></a>
+                    </li>
+                    <li class="page-item" th:classappend="${currentPage >= totalPages - 1} ? 'disabled'">
+                        <a class="page-link" th:href="@{/(page=${currentPage + 1}, sort=${sortBy}, order=${order})}">Next</a>
+                    </li>
+                </ul>
+            </nav>
         </div>
         
-        <div th:if="${posts == null or #lists.isEmpty(posts)}">
-            <p class="text-muted">No posts yet.</p>
-            <a href="/write" class="btn btn-primary">Write</a>
+        <div th:if="${posts == null or #lists.isEmpty(posts)}" class="text-center py-5">
+            <p class="text-muted fs-4">No posts yet.</p>
+            <a href="/write" class="btn btn-primary btn-lg">Write</a>
         </div>
     </div>
 </body>

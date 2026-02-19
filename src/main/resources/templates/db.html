@@ -16,6 +16,9 @@
         <form th:action="@{/db/sample}" method="post" style="display:inline;">
             <button type="submit" class="btn btn-info" onclick="return confirm('샘플 데이터를 추가하시겠습니까?')">샘플 데이터 추가</button>
         </form>
+        <form th:action="@{/db/sample/many}" method="post" style="display:inline;">
+            <button type="submit" class="btn btn-primary" onclick="return confirm('123개 샘플 데이터를 추가하시겠습니까?')">123개 샘플 추가</button>
+        </form>
         <form th:action="@{/db/data}" method="post" style="display:inline;">
             <input type="hidden" name="_method" value="delete">
             <button type="submit" class="btn btn-warning" onclick="return confirm('데이터만 삭제하시겠습니까?')">데이터 삭제</button>

@@ -19,15 +19,60 @@ public class PostController {
     private PostService postService;
     
     @GetMapping("/")
-    public String list(Model model) {
+    public String list(
+            @RequestParam(name = "tag", required = false) String tag,
+            @RequestParam(name = "q", required = false) String keyword,
+            @RequestParam(name = "sort", required = false, defaultValue = "created") String sortBy,
+            @RequestParam(name = "order", required = false, defaultValue = "desc") String order,
+            @RequestParam(name = "page", required = false, defaultValue = "0") int page,
+            Model model) {
         try {
-            List<Post> posts = postService.findAll();
+            int pageSize = 10;
+            List<Post> posts;
+            int totalPages = 1;
+            
+            if (tag != null && !tag.isEmpty()) {
+                posts = postService.findByTag(tag);
+                model.addAttribute("searchTag", tag);
+                model.addAttribute("searchKeyword", tag);
+                totalPages = (int) Math.ceil((double) posts.size() / pageSize);
+                int start = page * pageSize;
+                int end = Math.min(start + pageSize, posts.size());
+                if (start < posts.size()) {
+                    posts = posts.subList(start, end);
+                }
+            } else if (keyword != null && !keyword.isEmpty()) {
+                posts = postService.search(keyword);
+                model.addAttribute("searchKeyword", keyword);
+                totalPages = (int) Math.ceil((double) posts.size() / pageSize);
+                int start = page * pageSize;
+                int end = Math.min(start + pageSize, posts.size());
+                if (start < posts.size()) {
+                    posts = posts.subList(start, end);
+                }
+            } else {
+                posts = postService.getSortedPosts(sortBy, order);
+                totalPages = postService.getTotalPages(pageSize);
+                List<Post> sortedPosts = posts;
+                int start = page * pageSize;
+                int end = Math.min(start + pageSize, sortedPosts.size());
+                if (start < sortedPosts.size()) {
+                    posts = sortedPosts.subList(start, end);
+                }
+            }
+            
             model.addAttribute("posts", posts);
             model.addAttribute("tagRank", postService.getTagRank());
+            model.addAttribute("viewRank", postService.getViewRank());
+            model.addAttribute("sortBy", sortBy);
+            model.addAttribute("order", order);
+            model.addAttribute("currentPage", page);
+            model.addAttribute("totalPages", totalPages);
         } catch (Exception e) {
             model.addAttribute("error", "Database not found. Please create DB first.");
             model.addAttribute("posts", Collections.emptyList());
             model.addAttribute("tagRank", new LinkedHashMap<String, Integer>());
+            model.addAttribute("viewRank", Collections.emptyList());
         }
         return "index";
     }
